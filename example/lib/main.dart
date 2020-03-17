@@ -13,14 +13,10 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  bool _hasPermission;
+  bool _isIgnoringBatteryOptimizations;
 
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
+// Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
     // Platform messages may fail, so we use a try/catch PlatformException.
@@ -40,6 +36,26 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void hasPermission() async{
+    final hasPermission=await SoBattery.hasPermission();
+    setState(() {
+      _hasPermission=hasPermission;
+    });
+  }
+
+  void isIgnoringBatteryOptimizations() async{
+    final isIgnoringBatteryOptimizations= await SoBattery.isIgnoringBatteryOptimizations();
+    setState(() {
+      _isIgnoringBatteryOptimizations=isIgnoringBatteryOptimizations;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initPlatformState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -47,8 +63,22 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: const Text('Plugin example app'),
         ),
-        body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+        body: Column(
+          children: <Widget>[
+            Center(
+              child: Text('Running on: $_platformVersion\n'),
+            ),
+            Text('has Permission ${_hasPermission}'),
+            RaisedButton(
+              child: Text('has Permission'),
+              onPressed: hasPermission
+            ),
+            Text('isIgnoringBatteryOptimizations ${_isIgnoringBatteryOptimizations}'),
+            RaisedButton(
+              child: Text('isIgnoringBatteryOptimizations'),
+              onPressed: isIgnoringBatteryOptimizations
+            ),
+          ],
         ),
       ),
     );

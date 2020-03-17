@@ -1,8 +1,13 @@
 package com.github.taojoe.so_battery
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import androidx.annotation.NonNull;
+import android.os.Build
+import android.os.PowerManager
+import androidx.annotation.NonNull
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat.getSystemService
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -13,6 +18,7 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugin.common.PluginRegistry.Registrar
+
 
 enum class PermissionResult{
   GRANTED, PERMISSION_DENIED, PERMISSION_DENIED_NEVER_ASK
@@ -43,17 +49,31 @@ public class SoBatteryPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, P
     }
     fun init(messenger: BinaryMessenger, context: Context){
       instance= SoBatteryPlugin()
+      instance.applicationContext=context
       val channel = MethodChannel(messenger, METHOD_CHANNEL_NAME)
       channel.setMethodCallHandler(instance)
     }
   }
-
+  private var applicationContext:Context?=null
   private var activityBinding:ActivityPluginBinding?=null
   private var currentResult: Result?=null
+
+  private val context:Context?
+    get() = activityBinding?.activity ?: applicationContext
 
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     if (call.method == "getPlatformVersion") {
       result.success("Android ${android.os.Build.VERSION.RELEASE}")
+    } else if(call.method=="hasPermission"){
+      val hasPermission= ActivityCompat.checkSelfPermission(context!!, Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) ==PackageManager.PERMISSION_GRANTED
+      result.success(hasPermission)
+    } else if(call.method=="isIgnoringBatteryOptimizations"){
+      val pm = context!!.getSystemService(Context.POWER_SERVICE) as? PowerManager
+      var ret=true
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        ret=pm?.isIgnoringBatteryOptimizations(context!!.packageName) ?: false
+      }
+      result.success(ret)
     } else {
       result.notImplemented()
     }
@@ -91,6 +111,5 @@ public class SoBatteryPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, P
     }
     return false
   }
-
 
 }
